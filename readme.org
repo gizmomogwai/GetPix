@@ -1,0 +1,26 @@
+* GetPix for Android
+With a recent release of Android, my old photo solution (pulling the
+images via mtp) did not work for me anymore.
+
+So I decided that I wanted another way of getting my images from my
+phone to my computer.
+
+GetPix is a simple server implemented for android, that exposes your
+images in a REST-protocol.
+
+** Protocol
+*** GET /index
+gets a json of all available images
+
+*** GET /files/{}
+gets one of the indexed images as binary
+
+*** POST /files filename={} suffix={}
+marks on of the indexed images as transferred, suffix is the marker (I
+use my username).
+
+** Used libraries
+- The great nanohttp-library
+- junit
+- assertj-core
+- and the android sdk
