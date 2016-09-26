@@ -24,3 +24,7 @@ use my username).
 - junit
 - assertj-core
 - and the android sdk
+
+** Open Issues
+- make GetPix a proper service
+- make the apk smaller
