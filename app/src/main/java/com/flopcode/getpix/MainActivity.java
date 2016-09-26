@@ -14,13 +14,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.TextView;
-import com.google.common.base.Joiner;
 import fi.iki.elonen.NanoHTTPD;
-import io.realm.Realm;
-import io.realm.Realm.Transaction;
-import io.realm.RealmConfiguration;
-import io.realm.RealmQuery;
 import org.json.JSONArray;
 
 import java.io.ByteArrayOutputStream;
@@ -40,6 +36,7 @@ import java.util.Map;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.text.TextUtils.join;
 import static fi.iki.elonen.NanoHTTPD.Method.POST;
 import static fi.iki.elonen.NanoHTTPD.Response.Status.INTERNAL_ERROR;
 import static fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND;
@@ -49,17 +46,17 @@ import static fi.iki.elonen.NanoHTTPD.SOCKET_READ_TIMEOUT;
 public class MainActivity extends AppCompatActivity {
 
   private static final int MY_REQUEST_PERMISSON_CODE = 42;
-  private static final String LOG_TAG = "GetPix";
+  public static final String LOG_TAG = "GetPix";
   public static final String INDEX = "/index";
-  public static final String FILES = "/files";
+  public static final String FILES = "/files/";
   public static final String JSON_MIME_TYPE = "application/json";
+  public static final int PORT = 4567;
   private FloatingActionButton fab;
-  private Realm realm;
-  private Exception exception;
   private TextView ips;
+  private Database database;
+  private NanoHTTPD httpServer;
 
   private class GetNetworkAddresses extends AsyncTask<Void, Void, String> {
-
     @Override
     protected String doInBackground(Void... voids) {
       List<String> res = new ArrayList<>();
@@ -78,21 +75,26 @@ public class MainActivity extends AppCompatActivity {
       } catch (Exception e) {
         e.printStackTrace();
       }
-      return Joiner.on("\n").join(res);
+      return join("\n", res);
     }
 
     @Override
     protected void onPostExecute(String s) {
-      ips.setText(s);
+      ips.setText(s + "\n\nREST-API:\n" + endpointsToString());
     }
+
+  }
+
+  private String endpointsToString() {
+    return "GET " + INDEX + " - getting json of all files available\n"
+      + "GET " + FILES + "{} - getting the raw data of one file\n"
+      + "POST filename={} suffix={} " + FILES + " - marking one file as done\n";
   }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    RealmConfiguration realmConfig = new RealmConfiguration.Builder(this).build();
-    Realm.setDefaultConfiguration(realmConfig);
-    realm = Realm.getDefaultInstance();
+    database = new StupidDatabase(new LogcatLogging(), LOG_TAG, new File(getFilesDir(), "stupid.java-objects"));
 
     setContentView(R.layout.activity_main);
     ips = (TextView) findViewById(R.id.ips);
@@ -105,19 +107,29 @@ public class MainActivity extends AppCompatActivity {
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-          .setAction("Action", null).show();
+        Snackbar.make(view, "Reset copy information data", Snackbar.LENGTH_LONG)
+          .setAction("Reset", new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+              database.deleteAll();
+            }
+          })
+          .show();
       }
     });
-
     requestPermissions();
+  }
+
+  @Override
+  protected void onDestroy() {
+    database.close();
+    httpServer.closeAllConnections();
+    super.onDestroy();
   }
 
   private void requestPermissions() {
     int readRes = ContextCompat.checkSelfPermission(this, READ_EXTERNAL_STORAGE);
     int writeRes = ContextCompat.checkSelfPermission(this, WRITE_EXTERNAL_STORAGE);
-    Log.e(LOG_TAG, "read external: " + readRes);
-    Log.e(LOG_TAG, "write external: " + writeRes);
     if ((readRes != PERMISSION_GRANTED) || (writeRes != PERMISSION_GRANTED)) {
       ActivityCompat.requestPermissions(this, new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE}, MY_REQUEST_PERMISSON_CODE);
     } else {
@@ -158,13 +170,14 @@ public class MainActivity extends AppCompatActivity {
 
   private void showPictureFolder() {
     try {
-      NanoHTTPD httpServer = new NanoHTTPD(4567) {
+      httpServer = new NanoHTTPD(PORT) {
         @Override
         public Response serve(IHTTPSession session) {
           try {
             if (session.getMethod() == Method.GET) {
               String path = session.getUri();
               if (path.equals(INDEX)) {
+                Log.d(LOG_TAG, INDEX);
                 final List<String> files = collectFiles();
                 final DataTransfer<Collection<? extends String>> dt = new DataTransfer<>(1);
                 runOnUiThread(new Runnable() {
@@ -180,9 +193,9 @@ public class MainActivity extends AppCompatActivity {
                   array.put(s);
                 }
                 return newFixedLengthResponse(OK, JSON_MIME_TYPE, array.toString());
-              } else if (path.startsWith(FILES + "/")) {
+              } else if (path.startsWith(FILES)) {
                 String filename = path.substring(FILES.length());
-                Log.e(LOG_TAG, "transferring file: " + filename);
+                Log.d(LOG_TAG, FILES + filename);
                 return newFixedLengthResponse(OK, "application/binary", new FileInputStream(filename), new File(filename).length());
               } else {
                 newFixedLengthResponse(NOT_FOUND, JSON_MIME_TYPE, "path '" + path + "' not known");
@@ -190,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (session.getMethod() == POST) {
 
               String path = session.getUri();
-              if (path.startsWith(FILES + "/")) {
+              if (path.startsWith(FILES)) {
                 Map<String, String> postData = new HashMap<>();
                 session.parseBody(postData);
                 final String filename = session.getParameters().get("filename").get(0);
@@ -200,17 +213,9 @@ public class MainActivity extends AppCompatActivity {
                   @Override
                   public void run() {
                     try {
-                      realm.executeTransaction(new Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-                          Transferred transferred = realm.createObject(Transferred.class);
-                          transferred.filename = filename;
-                          transferred.to = suffix;
-                        }
-                      });
+                      database.add(new Transferred(filename, suffix));
                       dt.setData("OK");
                     } catch (Exception e) {
-                      exception = e;
                       dt.exception(e);
                     }
                   }
@@ -219,8 +224,9 @@ public class MainActivity extends AppCompatActivity {
                 return newFixedLengthResponse(OK, "text", "" + dt.getData());
               }
             }
-            return newFixedLengthResponse(NOT_FOUND, "text/json", "could now work with " + session);
+            return newFixedLengthResponse(NOT_FOUND, "text/json", "could not work with " + session);
           } catch (Exception e) {
+            Log.e(LOG_TAG, e.getMessage(), e);
             return newFixedLengthResponse(INTERNAL_ERROR, "text", e.getMessage());
           }
         }
@@ -238,25 +244,15 @@ public class MainActivity extends AppCompatActivity {
       Log.e(LOG_TAG, "could not handle request", e);
       // Snackbar.make(fab, "Could not start httpd server: " + e.getMessage(), Snackbar.LENGTH_LONG).show();
     }
-    File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-    Log.e(LOG_TAG, "pictures directory: " + file);
-    File[] h = file.listFiles();
-    Log.e(LOG_TAG, "pictures directory files: " + h);
-    if (h != null) {
-      for (File f : file.listFiles()) {
-        Log.e(LOG_TAG, "  " + f);
-      }
-    }
-
   }
 
   private Collection<? extends String> realmFiles() {
     ArrayList<String> res = new ArrayList<>();
-    RealmQuery<Transferred> h = realm.where(Transferred.class);
-    Iterator<Transferred> i = h.findAll().iterator();
+
+    Iterator<Transferred> i = database.getAll();
     while (i.hasNext()) {
       Transferred t = i.next();
-      Log.e(LOG_TAG, "from realm: " + t.virtualFilename());
+      Log.d(LOG_TAG, "from database: " + t.virtualFilename());
       res.add(t.virtualFilename());
     }
     return res;
@@ -271,8 +267,6 @@ public class MainActivity extends AppCompatActivity {
   private List<String> collect(List<String> res, File root) {
     File[] files = root.listFiles();
     for (File f : files) {
-      Log.e(LOG_TAG, "absolute: " + f.getAbsolutePath());
-      Log.e(LOG_TAG, "name: " + f.getName());
       if (f.isFile()) {
         res.add(f.getAbsolutePath());
       } else {

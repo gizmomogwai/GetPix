@@ -2,12 +2,9 @@ buildscript {
   repositories {
     jcenter()
   }
-  dependencies {
-    classpath "io.realm:realm-gradle-plugin:1.2.0"
-  }
 }
+
 apply plugin: 'com.android.application'
-apply plugin: 'realm-android'
 
 android {
   compileSdkVersion 23
@@ -20,19 +17,21 @@ android {
     versionCode 1
     versionName "1.0"
   }
+
   buildTypes {
     release {
-      minifyEnabled false
-      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+      minifyEnabled true
+      shrinkResources true
+      proguardFile getDefaultProguardFile('proguard-android.txt')
+      proguardFile 'proguard-rules.pro'
     }
   }
+
 }
 
+
 dependencies {
-  compile fileTree(dir: 'libs', include: ['*.jar'])
-  testCompile 'junit:junit:4.12'
-  compile 'com.google.guava:guava:19.0'
+  compile project(':lib')
   compile 'com.android.support:appcompat-v7:23.4.0'
   compile 'com.android.support:design:23.4.0'
-  compile 'org.nanohttpd:nanohttpd:2.3.1'
 }
