@@ -5,10 +5,11 @@ buildscript {
 }
 
 apply plugin: 'com.android.application'
+apply plugin: 'com.neenbedankt.android-apt'
 
 android {
   compileSdkVersion 23
-  buildToolsVersion "24.0.2"
+  buildToolsVersion "24.0.3"
 
   defaultConfig {
     applicationId "com.flopcode.getpix"
@@ -26,7 +27,6 @@ android {
       proguardFile 'proguard-rules.pro'
     }
   }
-
 }
 
 
@@ -34,4 +34,8 @@ dependencies {
   compile project(':lib')
   compile 'com.android.support:appcompat-v7:23.4.0'
   compile 'com.android.support:design:23.4.0'
+  compile 'org.nanohttpd:nanohttpd:2.3.1'
+
+  compile deps.butterknife
+  apt deps.butterknifeCompiler
 }

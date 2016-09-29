@@ -1,8 +1,9 @@
 package com.flopcode.getpix;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -15,67 +16,39 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.TextView;
-import fi.iki.elonen.NanoHTTPD;
-import org.json.JSONArray;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.support.design.widget.Snackbar.LENGTH_LONG;
 import static android.text.TextUtils.join;
-import static fi.iki.elonen.NanoHTTPD.Method.POST;
-import static fi.iki.elonen.NanoHTTPD.Response.Status.INTERNAL_ERROR;
-import static fi.iki.elonen.NanoHTTPD.Response.Status.NOT_FOUND;
-import static fi.iki.elonen.NanoHTTPD.Response.Status.OK;
-import static fi.iki.elonen.NanoHTTPD.SOCKET_READ_TIMEOUT;
 
 public class MainActivity extends AppCompatActivity {
 
   private static final int MY_REQUEST_PERMISSON_CODE = 42;
   public static final String LOG_TAG = "GetPix";
-  public static final String INDEX = "/index";
-  public static final String FILES = "/files/";
-  public static final String JSON_MIME_TYPE = "application/json";
-  public static final int PORT = 4567;
-  private FloatingActionButton fab;
-  private TextView ips;
-  private Database database;
-  private NanoHTTPD httpServer;
+
 
   private class GetNetworkAddresses extends AsyncTask<Void, Void, String> {
+    private final TextView ips;
+
+    public GetNetworkAddresses(TextView ips) {
+      this.ips = ips;
+    }
+
     @Override
     protected String doInBackground(Void... voids) {
-      List<String> res = new ArrayList<>();
-      try {
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        while (interfaces.hasMoreElements()) {
-          NetworkInterface networkInterface = interfaces.nextElement();
-          Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
-          while (addresses.hasMoreElements()) {
-            InetAddress inetAddress = addresses.nextElement();
-            if (!inetAddress.isLoopbackAddress()) {
-              res.add(networkInterface.getDisplayName() + ": " + inetAddress.getHostName() + ", " + inetAddress.getHostAddress());
-            }
-          }
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      return join("\n", res);
+      return join("\n", getNetworkAddresses());
     }
 
     @Override
@@ -85,33 +58,55 @@ public class MainActivity extends AppCompatActivity {
 
   }
 
+  public static List<String> getNetworkAddresses() {
+    List<String> res = new ArrayList<>();
+    try {
+      Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+      while (interfaces.hasMoreElements()) {
+        NetworkInterface networkInterface = interfaces.nextElement();
+        Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+        while (addresses.hasMoreElements()) {
+          InetAddress inetAddress = addresses.nextElement();
+          if (!inetAddress.isLoopbackAddress()) {
+            res.add(networkInterface.getDisplayName() + ": " + inetAddress.getHostName() + ", " + inetAddress.getHostAddress());
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return res;
+  }
+
   private String endpointsToString() {
-    return "GET " + INDEX + " - getting json of all files available\n"
-      + "GET " + FILES + "{} - getting the raw data of one file\n"
-      + "POST filename={} suffix={} " + FILES + " - marking one file as done\n";
+    return "GET " + GetPixService.INDEX + " - getting json of all files available\n"
+      + "GET " + GetPixService.FILES + "{} - getting the raw data of one file\n"
+      + "POST filename={} suffix={} " + GetPixService.FILES + " - marking one file as done\n";
   }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    database = new StupidDatabase(new LogcatLogging(), LOG_TAG, new File(getFilesDir(), "stupid.java-objects"));
 
     setContentView(R.layout.activity_main);
-    ips = (TextView) findViewById(R.id.ips);
-    new GetNetworkAddresses().execute();
+    ButterKnife.bind(this);
 
-    fab = (FloatingActionButton) findViewById(R.id.fab);
+    new GetNetworkAddresses((TextView) findViewById(R.id.ips)).execute();
+
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
 
+    FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        Snackbar.make(view, "Reset copy information data", Snackbar.LENGTH_LONG)
+        final Intent intent = getPixServiceIntent(MainActivity.this);
+        intent.setAction("delete");
+        Snackbar.make(view, "Reset copy information data", LENGTH_LONG)
           .setAction("Reset", new OnClickListener() {
             @Override
             public void onClick(View view) {
-              database.deleteAll();
+              startService(intent);
             }
           })
           .show();
@@ -120,10 +115,18 @@ public class MainActivity extends AppCompatActivity {
     requestPermissions();
   }
 
+  @OnClick(R.id.start)
+  public void onStart(Button b) {
+    Log.e(LOG_TAG, "onStart");
+    startService(getPixServiceIntent(this));
+  }
+
+  public static Intent getPixServiceIntent(Context c) {
+    return new Intent(c, GetPixService.class);
+  }
+
   @Override
   protected void onDestroy() {
-    database.close();
-    httpServer.closeAllConnections();
     super.onDestroy();
   }
 
@@ -169,110 +172,7 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void showPictureFolder() {
-    try {
-      httpServer = new NanoHTTPD(PORT) {
-        @Override
-        public Response serve(IHTTPSession session) {
-          try {
-            if (session.getMethod() == Method.GET) {
-              String path = session.getUri();
-              if (path.equals(INDEX)) {
-                Log.d(LOG_TAG, INDEX);
-                final List<String> files = collectFiles();
-                final DataTransfer<Collection<? extends String>> dt = new DataTransfer<>(1);
-                runOnUiThread(new Runnable() {
-                  @Override
-                  public void run() {
-                    dt.setData(realmFiles());
-                  }
-                });
-                dt.await();
-                files.addAll(dt.getData());
-                JSONArray array = new JSONArray();
-                for (String s : files) {
-                  array.put(s);
-                }
-                return newFixedLengthResponse(OK, JSON_MIME_TYPE, array.toString());
-              } else if (path.startsWith(FILES)) {
-                String filename = path.substring(FILES.length());
-                Log.d(LOG_TAG, FILES + filename);
-                return newFixedLengthResponse(OK, "application/binary", new FileInputStream(filename), new File(filename).length());
-              } else {
-                newFixedLengthResponse(NOT_FOUND, JSON_MIME_TYPE, "path '" + path + "' not known");
-              }
-            } else if (session.getMethod() == POST) {
-
-              String path = session.getUri();
-              if (path.startsWith(FILES)) {
-                Map<String, String> postData = new HashMap<>();
-                session.parseBody(postData);
-                final String filename = session.getParameters().get("filename").get(0);
-                final String suffix = session.getParameters().get("suffix").get(0);
-                final DataTransfer<Object> dt = new DataTransfer<>(1);
-                runOnUiThread(new Runnable() {
-                  @Override
-                  public void run() {
-                    try {
-                      database.add(new Transferred(filename, suffix));
-                      dt.setData("OK");
-                    } catch (Exception e) {
-                      dt.exception(e);
-                    }
-                  }
-                });
-                dt.await();
-                return newFixedLengthResponse(OK, "text", "" + dt.getData());
-              }
-            }
-            return newFixedLengthResponse(NOT_FOUND, "text/json", "could not work with " + session);
-          } catch (Exception e) {
-            Log.e(LOG_TAG, e.getMessage(), e);
-            return newFixedLengthResponse(INTERNAL_ERROR, "text", e.getMessage());
-          }
-        }
-
-        private void copy(InputStream inputStream, ByteArrayOutputStream body) throws Exception {
-          int read = inputStream.read();
-          while (read != -1) {
-            body.write(read);
-            read = inputStream.read();
-          }
-        }
-      };
-      httpServer.start(SOCKET_READ_TIMEOUT, false);
-    } catch (Exception e) {
-      Log.e(LOG_TAG, "could not handle request", e);
-      // Snackbar.make(fab, "Could not start httpd server: " + e.getMessage(), Snackbar.LENGTH_LONG).show();
-    }
   }
 
-  private Collection<? extends String> realmFiles() {
-    ArrayList<String> res = new ArrayList<>();
 
-    Iterator<Transferred> i = database.getAll();
-    while (i.hasNext()) {
-      Transferred t = i.next();
-      Log.d(LOG_TAG, "from database: " + t.virtualFilename());
-      res.add(t.virtualFilename());
-    }
-    return res;
-  }
-
-  private List<String> collectFiles() {
-    File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-    List<String> res = new ArrayList<>();
-    return collect(res, root);
-  }
-
-  private List<String> collect(List<String> res, File root) {
-    File[] files = root.listFiles();
-    for (File f : files) {
-      if (f.isFile()) {
-        res.add(f.getAbsolutePath());
-      } else {
-        collect(res, f);
-      }
-    }
-    return res;
-  }
 }

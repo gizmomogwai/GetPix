@@ -1,5 +1,6 @@
 def mobile
-  '10.10.12.243:4567'
+#  '192.168.1.125:4567'
+  '192.168.44.1:4567'
 end
 desc 'show images on getpix'
 task :index do
