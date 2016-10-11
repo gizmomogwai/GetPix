@@ -6,18 +6,22 @@ So I decided that I wanted another way of getting my images from my
 phone to my computer.
 
 GetPix is a simple server implemented for android, that exposes your
-images in a REST-protocol.
+images in a REST-protocol. The Server is announced as
+_getpix._tcp.local on bonjour.
 
 ** Protocol
 *** GET /index
-gets a json of all available images
+gets a json of all available images. additional files by the name of
+image-name.suffix are added to the list. with this clients can detect
+if they already transferred an image.
 
 *** GET /files/{}
-gets one of the indexed images as binary
+gets one of the indexed images as binary.
 
 *** POST /files filename={} suffix={}
 marks on of the indexed images as transferred, suffix is the marker (I
-use my username).
+use my username). the next index call will contain a virtual file with
+the filename image-name.suffix.
 
 ** Used libraries
 - The great nanohttp-library
@@ -25,6 +29,6 @@ use my username).
 - assertj-core
 - and the android sdk
 
-** Open Issues
-- make GetPix a proper service
-- make the apk smaller
+** Client implementations
+https://github.com/gizmomogwai/imagelib contains a client
+implementation.

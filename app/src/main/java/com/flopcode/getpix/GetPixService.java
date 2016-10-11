@@ -4,10 +4,12 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.net.nsd.NsdManager.RegistrationListener;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.InboxStyle;
@@ -45,6 +47,8 @@ public class GetPixService extends Service {
   private HandlerThread serviceThread;
   private Handler handler;
   private Database database;
+  private RegistrationListener listener;
+  private Bonjour bonjour;
 
   private static void copy(InputStream inputStream, ByteArrayOutputStream body) throws Exception {
     int read = inputStream.read();
@@ -67,6 +71,7 @@ public class GetPixService extends Service {
     serviceThread = new HandlerThread("GetPixServiceThread");
     serviceThread.start();
     handler = new Handler(serviceThread.getLooper());
+    bonjour = new Bonjour(getApplicationContext());
     startServer();
   }
 
@@ -74,7 +79,7 @@ public class GetPixService extends Service {
   public void onDestroy() {
     Log.e(LOG_TAG, "GetPixService.onDestroy");
     removeNotificationIcon();
-
+    bonjour.removeService();
     final DataTransfer<String> dt = new DataTransfer<>(1);
     try {
       handler.post(new Runnable() {
@@ -157,6 +162,8 @@ public class GetPixService extends Service {
             httpServer.start(SOCKET_READ_TIMEOUT, false);
             dt.setData("ok");
             installNotificationIcon();
+            String name = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString("name", "blub");
+            bonjour.installService(PORT, name);
           } catch (Exception e) {
             Log.e(LOG_TAG, "could not handle request", e);
             dt.exception(e);

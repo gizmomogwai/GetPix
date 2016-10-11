@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -122,7 +123,10 @@ public class MainActivity extends AppCompatActivity {
   }
 
   public static Intent getPixServiceIntent(Context c) {
-    return new Intent(c, GetPixService.class);
+    final Intent intent = new Intent(c, GetPixService.class);
+    String name = PreferenceManager.getDefaultSharedPreferences(c).getString("name", "gizmo");
+    intent.putExtra("name", name);
+    return intent;
   }
 
   @Override
@@ -156,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
 
     //noinspection SimplifiableIfStatement
     if (id == R.id.action_settings) {
+      startActivity(new Intent(this, PreferencesActivity.class));
       return true;
     }
 

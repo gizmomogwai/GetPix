@@ -7,6 +7,16 @@ buildscript {
 apply plugin: 'com.android.application'
 apply plugin: 'com.neenbedankt.android-apt'
 
+// from http://stackoverflow.com/a/22597752
+def passwordFromKeychain = { name ->
+  def proc = ["security", "find-generic-password", "-s", name, "-a", name, "-w"].execute()
+  proc.waitFor()
+  def stdout = proc.in.text
+  def res = stdout.trim()
+  print res
+  return res
+}
+
 android {
   compileSdkVersion 23
   buildToolsVersion "24.0.3"
@@ -18,13 +28,21 @@ android {
     versionCode 1
     versionName "1.0"
   }
-
+  signingConfigs {
+    release {
+      storeFile file("../release.keystore")
+      storePassword passwordFromKeychain("play-store-keystore-password")
+      keyAlias "getpixk"
+      keyPassword passwordFromKeychain("play-store-keystore-password")
+    }
+  }
   buildTypes {
     release {
       minifyEnabled true
       shrinkResources true
       proguardFile getDefaultProguardFile('proguard-android.txt')
       proguardFile 'proguard-rules.pro'
+      signingConfig signingConfigs.release
     }
   }
 }

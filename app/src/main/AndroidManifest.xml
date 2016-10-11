@@ -26,6 +26,7 @@
       </intent-filter>
     </activity>
     <activity android:name=".StopGetPixService"/>
+    <activity android:name=".PreferencesActivity"/>
     <service android:name=".GetPixService"/>
   </application>
 
