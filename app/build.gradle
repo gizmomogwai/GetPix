@@ -5,34 +5,43 @@ buildscript {
 }
 
 apply plugin: 'com.android.application'
-apply plugin: 'com.neenbedankt.android-apt'
 
 // from http://stackoverflow.com/a/22597752
 def passwordFromKeychain = { name ->
-  def proc = ["security", "find-generic-password", "-s", name, "-a", name, "-w"].execute()
-  proc.waitFor()
-  def stdout = proc.in.text
-  def res = stdout.trim()
-  print res
-  return res
+  return "security find-generic-password -s ${name} -a ${name} -w".execute().text.trim();
+}
+
+import org.gradle.internal.logging.text.StyledTextOutput;
+import org.gradle.internal.logging.text.StyledTextOutputFactory;
+import org.gradle.internal.logging.text.StyledTextOutput.Style
+def gitVersion = {
+  def version = "git describe --dirty".execute().text.trim();
+  if (version.indexOf('dirty') != -1) {
+    services
+      .get(StyledTextOutputFactory)
+      .create("dirty")
+      .withStyle(Style.Failure)
+      .println("ATTENTION dirty build with version: '${version}'")
+  }
+  return version;
 }
 
 android {
   compileSdkVersion 23
-  buildToolsVersion "24.0.3"
+  buildToolsVersion "26.0.0"
 
   defaultConfig {
     applicationId "com.flopcode.getpix"
     minSdkVersion 23
     targetSdkVersion 23
-    versionCode 1
-    versionName "1.0"
+    versionCode 2
+    versionName gitVersion()
   }
   signingConfigs {
     release {
       storeFile file("../release.keystore")
       storePassword passwordFromKeychain("play-store-keystore-password")
-      keyAlias "getpixk"
+      keyAlias "getpix"
       keyPassword passwordFromKeychain("play-store-keystore-password")
     }
   }
@@ -43,7 +52,13 @@ android {
       proguardFile getDefaultProguardFile('proguard-android.txt')
       proguardFile 'proguard-rules.pro'
       signingConfig signingConfigs.release
+      resValue "string", "app_name", "GetPix"
     }
+    debug {
+      applicationIdSuffix ".debug"
+      resValue "string", "app_name", "GetPix-Debug"
+    }
+
   }
 }
 
@@ -55,5 +70,5 @@ dependencies {
   compile 'org.nanohttpd:nanohttpd:2.3.1'
 
   compile deps.butterknife
-  apt deps.butterknifeCompiler
+  annotationProcessor deps.butterknifeCompiler
 }
