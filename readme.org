@@ -16,7 +16,8 @@ image-name.suffix are added to the list. with this clients can detect
 if they already transferred an image.
 
 *** GET /files/{}
-gets one of the indexed images as binary.
+gets one of the indexed images as binary. use the filename from the
+index.
 
 *** POST /files filename={} suffix={}
 marks on of the indexed images as transferred, suffix is the marker (I
