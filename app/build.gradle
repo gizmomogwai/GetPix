@@ -8,7 +8,9 @@ apply plugin: 'com.android.application'
 
 // from http://stackoverflow.com/a/22597752
 def passwordFromKeychain = { name ->
-  return "security find-generic-password -s ${name} -a ${name} -w".execute().text.trim();
+  def command = "security find-generic-password -s ${name} -a ${name} -w"
+  println("executing command: " + command);
+  return command.execute().text.trim();
 }
 
 import org.gradle.internal.logging.text.StyledTextOutput;
@@ -28,7 +30,7 @@ def gitVersion = {
 
 android {
   compileSdkVersion 23
-  buildToolsVersion "26.0.0"
+  buildToolsVersion "26.0.2"
 
   defaultConfig {
     applicationId "com.flopcode.getpix"
@@ -40,9 +42,9 @@ android {
   signingConfigs {
     release {
       storeFile file("../release.keystore")
-      storePassword passwordFromKeychain("play-store-keystore-password")
+      storePassword passwordFromKeychain("getpix-play-store-keystore-password")
       keyAlias "getpix"
-      keyPassword passwordFromKeychain("play-store-keystore-password")
+      keyPassword passwordFromKeychain("getpix-play-store-keystore-password")
     }
   }
   buildTypes {
@@ -64,11 +66,11 @@ android {
 
 
 dependencies {
-  compile project(':lib')
-  compile 'com.android.support:appcompat-v7:23.4.0'
-  compile 'com.android.support:design:23.4.0'
-  compile 'org.nanohttpd:nanohttpd:2.3.1'
+  implementation project(':lib')
+  implementation 'com.android.support:appcompat-v7:23.4.0'
+  implementation 'com.android.support:design:23.4.0'
+  implementation 'org.nanohttpd:nanohttpd:2.3.1'
 
-  compile deps.butterknife
-  annotationProcessor deps.butterknifeCompiler
+  implementation deps.butterknife
+  annotationProcessor deps.annotationProcessor
 }
