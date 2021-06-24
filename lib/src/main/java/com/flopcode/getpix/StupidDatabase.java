@@ -31,7 +31,7 @@ public class StupidDatabase implements com.flopcode.getpix.Database {
     try {
       transferred = (TreeSet<Transferred>) new ObjectInputStream(new GZIPInputStream(new FileInputStream(file))).readObject();
     } catch (Exception e) {
-      logging.error(logTag, "StupidDatabase could not read data", e);
+      logging.info(logTag, "StupidDatabase could not read data - starting from scratch", e);
       transferred = new TreeSet<>();
     }
   }

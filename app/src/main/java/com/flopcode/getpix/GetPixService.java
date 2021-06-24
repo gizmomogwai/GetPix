@@ -10,9 +10,9 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationCompat.InboxStyle;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+
 import android.util.Log;
 import fi.iki.elonen.NanoHTTPD;
 import org.json.JSONArray;
@@ -181,7 +181,7 @@ public class GetPixService extends Service {
     Intent i = new Intent(this, StopGetPixService.class);
     PendingIntent pi = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
 
-    final InboxStyle inboxStyle = new InboxStyle();
+    final NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
     inboxStyle.setBigContentTitle("GetPix Server running:");
     inboxStyle.setSummaryText("Press to stop server");
     for (String s : MainActivity.getNetworkAddresses()) {

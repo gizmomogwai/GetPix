@@ -5,13 +5,6 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,8 +12,13 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -28,11 +26,14 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static android.support.design.widget.Snackbar.LENGTH_LONG;
 import static android.text.TextUtils.join;
+import static com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -138,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
     int readRes = ContextCompat.checkSelfPermission(this, READ_EXTERNAL_STORAGE);
     int writeRes = ContextCompat.checkSelfPermission(this, WRITE_EXTERNAL_STORAGE);
     if ((readRes != PERMISSION_GRANTED) || (writeRes != PERMISSION_GRANTED)) {
-      ActivityCompat.requestPermissions(this, new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE}, MY_REQUEST_PERMISSON_CODE);
+      requestPermissions(new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE}, MY_REQUEST_PERMISSON_CODE);
     } else {
       showPictureFolder();
     }
@@ -169,6 +170,7 @@ public class MainActivity extends AppCompatActivity {
 
   @Override
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     if (requestCode == MY_REQUEST_PERMISSON_CODE) {
       Log.e(LOG_TAG, permissions.toString());
 

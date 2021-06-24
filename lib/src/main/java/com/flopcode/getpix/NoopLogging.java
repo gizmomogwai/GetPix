@@ -9,6 +9,10 @@ class NoopLogging implements Logging {
   }
 
   @Override
+  public void info(String logTag, String s, Exception e) {
+  }
+
+  @Override
   public void debug(String tag, String msg) {
   }
 }
