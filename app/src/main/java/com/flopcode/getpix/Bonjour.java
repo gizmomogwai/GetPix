@@ -10,8 +10,7 @@ import static com.flopcode.getpix.MainActivity.LOG_TAG;
 
 public class Bonjour {
   NsdManager nsd;
-  private RegistrationListener registrationListener;
-  private String serviceName;
+  private final RegistrationListener registrationListener;
 
   public Bonjour(Context applicationContext) {
     nsd = (NsdManager) applicationContext.getSystemService(Context.NSD_SERVICE);
@@ -29,7 +28,7 @@ public class Bonjour {
       @Override
       public void onServiceRegistered(NsdServiceInfo nsdServiceInfo) {
         Log.d(LOG_TAG, "onServiceRegistered");
-        serviceName = nsdServiceInfo.getServiceName();
+        Log.d(LOG_TAG, "  registered as " + nsdServiceInfo.getServiceName());
       }
 
       @Override

@@ -1,89 +1,84 @@
-buildscript {
-  repositories {
-    mavenCentral()
-  }
+plugins {
+    id 'com.android.application'
 }
-
-apply plugin: 'com.android.application'
 
 // from http://stackoverflow.com/a/22597752
 def passwordFromKeychain = { name ->
-  def command = "security find-generic-password -s ${name} -a ${name} -w"
-  println("executing command: " + command);
-  return command.execute().text.trim();
+    synchronized (this) {
+        java.lang.String result = null;
+        if (result != null)
+            {
+            logger.error("reusing stuff")
+            return result;
+        }
+        def command = "security find-generic-password -s ${name} -a ${name} -w"
+        logger.error("executing command: " + command);
+        result = command.execute().text.trim();
+        return result;
+    }
 }
 
-import org.gradle.internal.logging.text.StyledTextOutput;
-import org.gradle.internal.logging.text.StyledTextOutputFactory;
-import org.gradle.internal.logging.text.StyledTextOutput.Style
 def gitVersion = {
-  def version = "git describe --dirty".execute().text.trim();
-  if (version.indexOf('dirty') != -1) {
-    services
-      .get(StyledTextOutputFactory)
-      .create("dirty")
-      .withStyle(Style.Failure)
-      .println("ATTENTION dirty build with version: '${version}'")
-  }
-  return version;
+    def version = "git describe --dirty".execute().text.trim();
+    if (version.indexOf('dirty') != -1) {
+        logger.warn("ATTENTION dirty build with version: '${version}'")
+    }
+    return version;
 }
+
+def localProperties = new Properties()
+localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+
+def password = localProperties.getProperty("keystore_password")
 
 android {
-  compileSdkVersion 30
-  buildToolsVersion "30.0.2"
-  defaultConfig {
-    applicationId "com.flopcode.getpix"
-    minSdkVersion 24
-    targetSdkVersion 30
-    versionCode 2
-    versionName gitVersion()
-  }
-  compileOptions {
-    sourceCompatibility JavaVersion.VERSION_1_8
-    targetCompatibility JavaVersion.VERSION_1_8
-  }
-  signingConfigs {
-    release {
-      storeFile file("../release.keystore")
-      storePassword passwordFromKeychain("getpix-play-store-keystore-password")
-      keyAlias "getpix"
-      keyPassword passwordFromKeychain("getpix-play-store-keystore-password")
-    }
-  }
-  buildTypes {
-    release {
-      minifyEnabled true
-      shrinkResources true
-      proguardFile getDefaultProguardFile('proguard-android.txt')
-      proguardFile 'proguard-rules.pro'
-      signingConfig signingConfigs.release
-      resValue "string", "app_name", "GetPix"
-    }
-    debug {
-      applicationIdSuffix ".debug"
-      resValue "string", "app_name", "GetPix-Debug"
+    namespace 'com.flopcode.getpix'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId "com.flopcode.getpix"
+        minSdk 24
+        targetSdk 33
+        versionCode 3
+        versionName gitVersion()
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-  }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    signingConfigs {
+        playstore {
+            storeFile file("../release.keystore")
+            storePassword password
+            keyAlias "getpix"
+            keyPassword password
+        }
+    }
+    buildFeatures {
+        viewBinding true
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.playstore
+        }
+    }
 }
 
-
 dependencies {
-  implementation project(':lib')
-  implementation 'com.android.support:appcompat-v7:28.0.0'
-  implementation 'com.android.support:design:28.0.0'
-  implementation 'com.android.support:support-v4:28.0.0'
-  implementation 'com.android.support:support-media-compat:28.0.0'
-  implementation 'com.android.support:animated-vector-drawable:28.0.0'
-  implementation 'com.android.support:customtabs:28.0.0'
-
-  implementation 'org.nanohttpd:nanohttpd:2.3.1'
-
-  implementation 'androidx.annotation:annotation:1.1.0'
-  implementation 'com.google.android.material:material:1.3.0'
-
-  implementation deps.butterknife
-  implementation 'androidx.appcompat:appcompat:1.3.0'
-  implementation 'androidx.coordinatorlayout:coordinatorlayout:1.1.0'
-  annotationProcessor deps.annotationProcessor
+    implementation project(':lib')
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.navigation:navigation-fragment:2.5.3'
+    implementation 'androidx.navigation:navigation-ui:2.5.3'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }

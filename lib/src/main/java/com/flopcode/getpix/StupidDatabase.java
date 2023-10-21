@@ -12,81 +12,82 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class StupidDatabase implements com.flopcode.getpix.Database {
-  private final Thread thread;
-  private final File file;
-  private final Logging logging;
-  private final String logTag;
-  private TreeSet<Transferred> transferred;
+    private final Thread thread;
+    private final File file;
+    private final Logging logging;
+    private final String logTag;
+    private TreeSet<Transferred> transferred;
 
-  public StupidDatabase(Logging logging, String logTag, File file) {
-    this.logging = logging;
-    this.logTag = logTag;
-    this.thread = Thread.currentThread();
-    this.file = file;
-    read();
-  }
-
-  private void read() {
-    assertThread();
-    try {
-      transferred = (TreeSet<Transferred>) new ObjectInputStream(new GZIPInputStream(new FileInputStream(file))).readObject();
-    } catch (Exception e) {
-      logging.info(logTag, "StupidDatabase could not read data - starting from scratch", e);
-      transferred = new TreeSet<>();
+    public StupidDatabase(Logging logging, String logTag, File file) {
+        this.logging = logging;
+        this.logTag = logTag;
+        this.thread = Thread.currentThread();
+        this.file = file;
+        read();
     }
-  }
 
-  private void assertThread() {
-    if (thread != Thread.currentThread()) {
-      throw new RuntimeException("called read not from correct thread. expected " + thread + ", got " + Thread.currentThread());
+    @SuppressWarnings("unchecked")
+    private void read() {
+        assertThread();
+        try {
+            transferred = (TreeSet<Transferred>) new ObjectInputStream(new GZIPInputStream(new FileInputStream(file))).readObject();
+        } catch (Exception e) {
+            logging.info(logTag, "StupidDatabase could not read data - starting from scratch", e);
+            transferred = new TreeSet<>();
+        }
     }
-  }
 
-  @Override
-  public void close() {
-    assertThread();
-    try {
-      final ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream(file)));
-      objectOutputStream.writeObject(transferred);
-      objectOutputStream.close();
-      logging.debug(logTag, "Size of db file: " + file.length());
-    } catch (IOException e) {
-      logging.error(logTag, "Stupid Database could not write data", e);
+    private void assertThread() {
+        if (thread != Thread.currentThread()) {
+            throw new RuntimeException("called read not from correct thread. expected " + thread + ", got " + Thread.currentThread());
+        }
     }
-  }
 
-  @Override
-  public void deleteAll() {
-    assertThread();
-    file.delete();
-    read();
-  }
-
-  @Override
-  public void add(Transferred t) {
-    assertThread();
-    transferred.add(t);
-  }
-
-  @Override
-  public Iterator<Transferred> getAll() {
-    assertThread();
-    return transferred.iterator();
-  }
-
-  @Override
-  public String toJson() {
-    Iterator<Transferred> i = getAll();
-    StringBuilder res = new StringBuilder();
-    res.append("[");
-    while (i.hasNext()) {
-      Transferred next = i.next();
-      res.append("{\"filename\"=\"" + next.filename + "\",\"to\"=\"" + next.to + "\"}");
-      if (i.hasNext()) {
-        res.append(",");
-      }
+    @Override
+    public void close() {
+        assertThread();
+        try {
+            final ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream(file)));
+            objectOutputStream.writeObject(transferred);
+            objectOutputStream.close();
+            logging.debug(logTag, "Size of db file: " + file.length());
+        } catch (IOException e) {
+            logging.error(logTag, "Stupid Database could not write data", e);
+        }
     }
-    res.append("]");
-    return res.toString();
-  }
+
+    @Override
+    public void deleteAll() {
+        assertThread();
+        file.delete();
+        read();
+    }
+
+    @Override
+    public void add(Transferred t) {
+        assertThread();
+        transferred.add(t);
+    }
+
+    @Override
+    public Iterator<Transferred> getAll() {
+        assertThread();
+        return transferred.iterator();
+    }
+
+    @Override
+    public String toJson() {
+        Iterator<Transferred> i = getAll();
+        StringBuilder res = new StringBuilder();
+        res.append("[");
+        while (i.hasNext()) {
+            Transferred next = i.next();
+            res.append("{\"filename\"=\"" + next.filename + "\",\"to\"=\"" + next.to + "\"}");
+            if (i.hasNext()) {
+                res.append(",");
+            }
+        }
+        res.append("]");
+        return res.toString();
+    }
 }

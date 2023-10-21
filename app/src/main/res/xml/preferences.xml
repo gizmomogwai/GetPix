@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
   <EditTextPreference
-    android:key="name"
-    android:title="NameTitle"
-    android:summary="NameSummary"
-    android:defaultValue="blub"/>
+    android:key="bonjour_name"
+    android:title="Bonjour Name"
+    android:summary="Name under which the service is discoverable"
+    android:defaultValue="gizmo"/>
 </PreferenceScreen>

@@ -1,13 +1,9 @@
 # Add project specific ProGuard rules here.
-# By default, the flags in this file are appended to flags specified
-# in /Users/gizmo/bin/android-sdk-macosx/tools/proguard/proguard-android.txt
-# You can edit the include path and order by changing the proguardFiles
-# directive in build.gradle.
+# You can control the set of applied configuration files using the
+# proguardFiles setting in build.gradle.
 #
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
-
-# Add any project specific keep options here:
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
@@ -15,29 +11,11 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
-#-dontwarn javax.annotation.**
-#-dontwarn javax.inject.**
-#-dontwarn sun.misc.Unsafe
-#
-## v7 support libs
--dontwarn android.support.v7.**
--keep class android.support.v7.** { *; }
--keep interface android.support.v7.** { *; }
-#
-## v4 support libs
--keep class android.support.v4.** { *; }
--keep interface android.support.v4.** { *; }
-#
-## realm
-#-keep class io.realm.annotations.RealmModule
-#-keep @io.realm.annotations.RealmModule class *
-#-keep class io.realm.internal.Keep
-#-keep @io.realm.internal.Keep class *
-#-dontwarn javax.**
-#-dontwarn io.realm.**
-#
-## guava
-#-keep class com.google.common.collect.** { *; }
-#-keep class com.google.common.base.** { *; }
--dontobfuscate
--dontoptimize
+
+# Uncomment this to preserve the line number information for
+# debugging stack traces.
+#-keepattributes SourceFile,LineNumberTable
+
+# If you keep the line number information, uncomment this to
+# hide the original source file name.
+#-renamesourcefileattribute SourceFile

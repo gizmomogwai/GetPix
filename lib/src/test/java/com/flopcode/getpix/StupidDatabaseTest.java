@@ -10,7 +10,7 @@ public class StupidDatabaseTest {
   @Test
   public void testDatabaseCreatesFile() {
     // when
-    final File file = new File("./test.db");
+    final File file = new File("./test-01.db");
     file.delete();
     Database db = new StupidDatabase(new NoopLogging(), "", file);
     db.close();
@@ -22,7 +22,7 @@ public class StupidDatabaseTest {
   @Test
   public void testDatabaseGrowsGetsSmallerAgain() {
     // when
-    final File file = new File("./test3.db");
+    final File file = new File("./test-02.db");
     file.delete();
     Database db = new StupidDatabase(new NoopLogging(), "", file);
     db.close();
@@ -47,7 +47,7 @@ public class StupidDatabaseTest {
 
   @Test
   public void freeData() {
-    final File file = new File("./test4.db");
+    final File file = new File("./test-03.db");
     file.delete();
     Database db = new StupidDatabase(new NoopLogging(), "", file);
     db.add(new Transferred("filename1", "forme"));
@@ -59,7 +59,7 @@ public class StupidDatabaseTest {
 
   @Test
   public void checkSize() {
-    final File file = new File("./test4.db");
+    final File file = new File("./test-04.db");
     file.delete();
     Database db = new StupidDatabase(new NoopLogging(), "", file);
     for (int i=0; i<100000; ++i) {

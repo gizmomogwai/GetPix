@@ -5,7 +5,6 @@ import java.util.concurrent.CountDownLatch;
 public class DataTransfer<T> extends CountDownLatch {
 
     private T data;
-    private Exception exception;
 
     public DataTransfer(int count) {
         super(count);
@@ -24,7 +23,6 @@ public class DataTransfer<T> extends CountDownLatch {
     }
 
     public void exception(Exception e) {
-        this.exception = e;
         countDown();
     }
 }

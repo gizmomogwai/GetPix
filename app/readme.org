@@ -1,4 +1,0 @@
-* password for signing
-must be in the keychain under passwords
-  keychain-item-name: getpix-play-store-keystore-password
-  account-name: getpix-play-store-keystore-password
