@@ -2,22 +2,6 @@ plugins {
     id 'com.android.application'
 }
 
-// from http://stackoverflow.com/a/22597752
-def passwordFromKeychain = { name ->
-    synchronized (this) {
-        java.lang.String result = null;
-        if (result != null)
-            {
-            logger.error("reusing stuff")
-            return result;
-        }
-        def command = "security find-generic-password -s ${name} -a ${name} -w"
-        logger.error("executing command: " + command);
-        result = command.execute().text.trim();
-        return result;
-    }
-}
-
 def gitVersion = {
     def version = "git describe --dirty".execute().text.trim();
     if (version.indexOf('dirty') != -1) {
