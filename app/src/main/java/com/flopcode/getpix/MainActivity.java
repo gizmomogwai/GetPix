@@ -9,7 +9,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.text.TextUtils.join;
 import static com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_LONG;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -23,7 +22,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
 
 import com.flopcode.getpix.databinding.ActivityMainBinding;
 import com.google.android.material.snackbar.Snackbar;
@@ -96,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         new GetNetworkAddresses(binding.ips).execute();
         setSupportActionBar(binding.toolbar);
         binding.fab.setOnClickListener(view -> {
-            final Intent intent = getPixServiceIntent(MainActivity.this);
+            final Intent intent = new Intent(this, GetPixService.class);
             intent.setAction("delete");
             Snackbar.make(view, "Reset copy information data", LENGTH_LONG)
                     .setAction("Reset", view1 -> startService(intent))
@@ -105,17 +103,10 @@ public class MainActivity extends AppCompatActivity {
         binding.start.setOnClickListener(view -> {
             Log.e(LOG_TAG, "onStart");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(getPixServiceIntent(MainActivity.this));
+                startForegroundService(new Intent(this, GetPixService.class));
             }
         });
         requestPermissions();
-    }
-
-    public static Intent getPixServiceIntent(Context c) {
-        final Intent intent = new Intent(c, GetPixService.class);
-        String name = PreferenceManager.getDefaultSharedPreferences(c).getString("name", "gizmo");
-        intent.putExtra("name", name);
-        return intent;
     }
 
     @Override

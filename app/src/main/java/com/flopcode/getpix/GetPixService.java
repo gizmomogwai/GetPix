@@ -61,6 +61,16 @@ public class GetPixService extends Service {
     }
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.e(LOG_TAG, "onStartCommand(action=" + intent.getAction() + ")");
+        if ("delete".equals(intent.getAction()))
+        {
+            handler.post(() -> database.deleteAll());
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
     public void onCreate() {
         Log.e(LOG_TAG, "GetPixService.onCreate");
         super.onCreate();
@@ -250,7 +260,7 @@ public class GetPixService extends Service {
         private Response getIndex() {
             Log.d(LOG_TAG, INDEX);
             final List<String> files = collectFiles();
-            // files.addAll(databaseFiles()); TODO ????
+            files.addAll(databaseFiles());
             JSONArray array = new JSONArray();
             for (String s : files) {
                 array.put(s);

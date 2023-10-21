@@ -61,6 +61,7 @@ public class StupidDatabase implements com.flopcode.getpix.Database {
         assertThread();
         file.delete();
         read();
+        logging.debug(logTag, "Wiped database");
     }
 
     @Override

@@ -10,14 +10,17 @@ task :index do
   sh "http #{mobile}/index"
 end
 
+def example_file
+  "/storage/emulated/0/DCIM/Camera/PXL_20231019_141333628.jpg"
+end
 desc "get one image from getpix"
 task :get do
-  sh "curl #{mobile}/files//storage/emulated/0/DCIM/Camera/PXL_20231019_141333628.jpg > out.jpg"
+  sh "curl #{mobile}/files/#{example_file} > out.jpg"
 end
 
 desc 'post files something with xform data'
 task :post do
-  sh "http -v -f #{mobile}/files/test suffix=123 filename=test"
+  sh "http -v -f #{mobile}/files/#{example_file} suffix=123 filename=#{example_file}"
 end
 
 def project_root
